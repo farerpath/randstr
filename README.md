@@ -1,5 +1,5 @@
 # randstr
-## Simple, lightweight safe random string generation library for golang
+## Simple, lightweight safe random string generate library for golang
 
 ```shell
 go get -u github.com/ghatdev/randstr
