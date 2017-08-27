@@ -2,5 +2,5 @@
 ## Simple, lightweight safe random string generate library for golang
 
 ```shell
-go get -u github.com/ghatdev/randstr
+go get -u github.com/farerpath/randstr
 ```
