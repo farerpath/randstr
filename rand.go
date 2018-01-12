@@ -38,6 +38,7 @@ func generateRandomString(s int) string {
     b, _ := generateRandomBytes(s)
     return base64.URLEncoding.EncodeToString(b)
 }
+
 // UseRandString func
 // Delete used string from db
 func UseRandString(str string) {
