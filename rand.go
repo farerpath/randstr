@@ -4,6 +4,7 @@ import (
 	"log"
 	"math/rand"
 	"time"
+	"encoding/base64"
 
 	"github.com/boltdb/bolt"
 )
@@ -20,6 +21,23 @@ func GenerateRandomString(n int) string {
 	return randStr
 }
 
+func generateRandomBytes(n int) ([]byte, error) {
+    b := make([]byte, n)
+    _, err := rand.Read(b)
+    // Note that err == nil only if we read len(b) bytes.
+    if err != nil {
+        return nil, err
+    }
+
+    return b, nil
+}
+
+// GenerateRandomString returns a URL-safe, base64 encoded
+// securely generated random string.
+func generateRandomString(s int) string {
+    b, _ := generateRandomBytes(s)
+    return base64.URLEncoding.EncodeToString(b)
+}
 // UseRandString func
 // Delete used string from db
 func UseRandString(str string) {
@@ -40,20 +58,6 @@ func UseRandString(str string) {
 			log.Fatalf("Failed to delete string.\n%v", err)
 		}
 	}
-}
-
-func generateRandomString(n int) string {
-	var letterRunes = []rune("0123456789abcdefghijklmnopqrstuvwxyz01234567899876543210ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
-
-	randSource := rand.NewSource(time.Now().UnixNano())
-	r := rand.New(randSource)
-
-	b := make([]rune, n)
-	for i := range b {
-		b[i] = letterRunes[r.Intn(len(letterRunes))]
-	}
-
-	return string(b)
 }
 
 func isRandStringUnique(randStr string) bool {
