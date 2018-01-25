@@ -4,7 +4,6 @@ import (
 	"log"
 	"math/rand"
 	"time"
-	"encoding/base64"
 
 	"github.com/boltdb/bolt"
 )
@@ -21,24 +20,6 @@ func GenerateRandomString(n int) string {
 	return randStr
 }
 
-func generateRandomBytes(n int) ([]byte, error) {
-    b := make([]byte, n)
-    _, err := rand.Read(b)
-    // Note that err == nil only if we read len(b) bytes.
-    if err != nil {
-        return nil, err
-    }
-
-    return b, nil
-}
-
-// GenerateRandomString returns a URL-safe, base64 encoded
-// securely generated random string.
-func generateRandomString(s int) string {
-    b, _ := generateRandomBytes(s)
-    return base64.URLEncoding.EncodeToString(b)
-}
-
 // UseRandString func
 // Delete used string from db
 func UseRandString(str string) {
@@ -50,7 +31,7 @@ func UseRandString(str string) {
 		defer db.Close()
 
 		err = db.Update(func(tx *bolt.Tx) error {
-			b := tx.Bucket([]byte("rand"))
+			b, err := tx.CreateBucketIfNotExists([]byte("rand"))
 			err = b.Delete([]byte(str))
 			return err
 		})
@@ -61,8 +42,22 @@ func UseRandString(str string) {
 	}
 }
 
+func generateRandomString(n int) string {
+	var letterRunes = []rune("0123456789abcdefghijklmnopqrstuvwxyz01234567899876543210ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
+
+	randSource := rand.NewSource(time.Now().UnixNano())
+	r := rand.New(randSource)
+
+	b := make([]rune, n)
+	for i := range b {
+		b[i] = letterRunes[r.Intn(len(letterRunes))]
+	}
+
+	return string(b)
+}
+
 func isRandStringUnique(randStr string) bool {
-	db, err := bolt.Open("rand.db", 0600, nil)
+	db, err := bolt.Open("rand.db", 0600, &bolt.Options{Timeout: 1 * time.Second})
 	if err != nil {
 		log.Fatalf("Failed to create or open rand.db file,\n%v", err)
 	}
@@ -71,14 +66,20 @@ func isRandStringUnique(randStr string) bool {
 	var v []byte
 
 	err = db.Update(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte("rand"))
+		b, err := tx.CreateBucketIfNotExists([]byte("rand"))
 		v = b.Get([]byte(randStr))
-		if v == nil {
-			err = b.Put([]byte(randStr), []byte(randStr))
+		if v != nil {
+			return nil
 		}
+
+		err = b.Put([]byte(randStr), []byte(randStr))
 
 		return err
 	})
+
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	if v != nil {
 		return false
