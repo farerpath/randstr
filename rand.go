@@ -50,7 +50,7 @@ func UseRandString(str string) {
 		defer db.Close()
 
 		err = db.Update(func(tx *bolt.Tx) error {
-			b, err := tx.CreateBucketIfNotExists([]byte("rand"))
+			b := tx.Bucket([]byte("rand"))
 			err = b.Delete([]byte(str))
 			return err
 		})
@@ -62,7 +62,7 @@ func UseRandString(str string) {
 }
 
 func isRandStringUnique(randStr string) bool {
-	db, err := bolt.Open("rand.db", 0600, &bolt.Options{Timeout: 1 * time.Second})
+	db, err := bolt.Open("rand.db", 0600, nil)
 	if err != nil {
 		log.Fatalf("Failed to create or open rand.db file,\n%v", err)
 	}
@@ -71,20 +71,14 @@ func isRandStringUnique(randStr string) bool {
 	var v []byte
 
 	err = db.Update(func(tx *bolt.Tx) error {
-		b, err := tx.CreateBucketIfNotExists([]byte("rand"))
+		b := tx.Bucket([]byte("rand"))
 		v = b.Get([]byte(randStr))
-		if v != nil {
-			return nil
+		if v == nil {
+			err = b.Put([]byte(randStr), []byte(randStr))
 		}
-
-		err = b.Put([]byte(randStr), []byte(randStr))
 
 		return err
 	})
-
-	if err != nil {
-		log.Fatal(err)
-	}
 
 	if v != nil {
 		return false
